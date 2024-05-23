@@ -1,0 +1,75 @@
+syntax = "proto3";
+package proto;
+option go_package = "./workflow";
+
+service Task {
+  rpc SetParams(TaskParams) returns (Empty);
+  rpc DryRun(Empty) returns (Empty);
+  rpc GetWorkflow(Empty) returns (Workflow);
+  rpc Start(Empty) returns (Empty);
+  rpc Stop(Empty) returns (Empty);
+  rpc Pause(Empty) returns (Empty);
+  rpc Resume(Empty) returns (Empty);
+}
+
+message Empty {}
+
+message Workflow {
+  // @gotags: json:"nodes"
+  repeated Node nodes = 1;
+  // @gotags: json:"edges"
+  repeated Edge edges = 2;
+}
+
+message Node {
+  // @gotags: json:"id"
+  string id = 1;
+  // @gotags: json:"label"
+  string label = 2;
+  // @gotags: json:"status"
+  string status = 3;
+  // @gotags: json:"uses"
+  string uses = 4;
+  // @gotags: json:"params"
+  repeated TaskParam params = 5;
+}
+
+message Edge {
+  // @gotags: json:"source"
+  Node source = 1;
+  // @gotags: json:"target"
+  Node target = 2;
+  // @gotags: json:"status"
+  string status = 3;
+}
+
+message TaskParams {
+  // @gotags: json:"params"
+  repeated TaskParam params = 1;
+}
+
+message TaskParam {
+  // @gotags: json:"title"
+  string title = 1;
+  // @gotags: json:"placeholder"
+  string placeholder = 2;
+  // @gotags: json:"order"
+  int32 order = 3;
+  // @gotags: json:"type"
+  string type = 4;
+  // @gotags: json:"required"
+  bool required = 5;
+  // @gotags: json:"key"
+  string key = 6;
+  // @gotags: json:"value"
+  string value = 7;
+  // @gotags: json:"candidate"
+  repeated Candidate candidate = 8;
+}
+
+message Candidate {
+  // @gotags: json:"displayName"
+  string display_name = 1;
+  // @gotags: json:"value"
+  string value = 2;
+}

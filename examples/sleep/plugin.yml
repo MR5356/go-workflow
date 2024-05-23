@@ -1,0 +1,14 @@
+id: 'builtin/sleep'
+label: 'Sleep'
+version: 'v1.0.0'
+author: 'Rui Ma'
+description: 'Sleep'
+
+params:
+  - title: 'Sleep Time'
+    placeholder: 'Enter sleep time'
+    order: 1
+    type: 'int'
+    required: true
+    key: 'sleep'
+    value: '1'

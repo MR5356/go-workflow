@@ -1,0 +1,7 @@
+id: 'builtin/expand'
+label: 'Expand'
+version: 'v1.0.0'
+author: 'Rui Ma'
+description: 'Expand demo'
+
+params: []
