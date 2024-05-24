@@ -9,7 +9,7 @@ type ExpandTask struct {
 	workflow.UnimplementedITask
 }
 
-func (t *ExpandTask) GetWorkflow() *workflow.Workflow {
+func (t *ExpandTask) GetWorkflow() *workflow.WorkflowDAG {
 	n1 := &workflow.Node{
 		Id:    uuid.NewString(),
 		Label: "打工人",
@@ -30,7 +30,7 @@ func (t *ExpandTask) GetWorkflow() *workflow.Workflow {
 		Label: "躺平",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
-	wf := &workflow.Workflow{}
+	wf := &workflow.WorkflowDAG{}
 	wf.AddNode(n1, n2, n3, n4)
 	wf.AddEdge(n1, n2)
 	wf.AddEdge(n1, n3)

@@ -28,7 +28,7 @@ func (t *CheckoutTask) SetParams(params *workflow.TaskParams) error {
 	return nil
 }
 
-func (t *CheckoutTask) Start() error {
+func (t *CheckoutTask) Run() error {
 	srcAuth, repoUrl, err := getAuth(t.repository, "", "")
 	if err != nil {
 		return err
@@ -78,18 +78,6 @@ func (t *CheckoutTask) Start() error {
 		}
 	}
 
-	return nil
-}
-
-func (t *CheckoutTask) Stop() error {
-	return nil
-}
-
-func (t *CheckoutTask) Pause() error {
-	return nil
-}
-
-func (t *CheckoutTask) Resume() error {
 	return nil
 }
 

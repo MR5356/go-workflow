@@ -29,16 +29,7 @@ type TaskGRPCServer struct {
 	UnimplementedTaskServer
 }
 
-func (c *TaskGRPCClient) DryRun() error {
-	_, err := c.client.DryRun(context.Background(), &Empty{})
-	return err
-}
-
-func (s *TaskGRPCServer) DryRun(ctx context.Context, req *Empty) (*Empty, error) {
-	return &Empty{}, s.Impl.DryRun()
-}
-
-func (c *TaskGRPCClient) GetWorkflow() *Workflow {
+func (c *TaskGRPCClient) GetWorkflow() *WorkflowDAG {
 	resp, err := c.client.GetWorkflow(context.Background(), &Empty{})
 	if err != nil {
 		return nil
@@ -46,7 +37,7 @@ func (c *TaskGRPCClient) GetWorkflow() *Workflow {
 	return resp
 }
 
-func (s *TaskGRPCServer) GetWorkflow(ctx context.Context, req *Empty) (*Workflow, error) {
+func (s *TaskGRPCServer) GetWorkflow(ctx context.Context, req *Empty) (*WorkflowDAG, error) {
 	return s.Impl.GetWorkflow(), nil
 }
 
@@ -59,38 +50,11 @@ func (s *TaskGRPCServer) SetParams(ctx context.Context, params *TaskParams) (*Em
 	return &Empty{}, s.Impl.SetParams(params)
 }
 
-func (c *TaskGRPCClient) Start() error {
-	_, err := c.client.Start(context.Background(), &Empty{})
+func (c *TaskGRPCClient) Run() error {
+	_, err := c.client.Run(context.Background(), &Empty{})
 	return err
 }
 
-func (s *TaskGRPCServer) Start(ctx context.Context, req *Empty) (*Empty, error) {
-	return &Empty{}, s.Impl.Start()
-}
-
-func (c *TaskGRPCClient) Stop() error {
-	_, err := c.client.Stop(context.Background(), &Empty{})
-	return err
-}
-
-func (s *TaskGRPCServer) Stop(ctx context.Context, req *Empty) (*Empty, error) {
-	return &Empty{}, s.Impl.Stop()
-}
-
-func (c *TaskGRPCClient) Pause() error {
-	_, err := c.client.Pause(context.Background(), &Empty{})
-	return err
-}
-
-func (s *TaskGRPCServer) Pause(ctx context.Context, req *Empty) (*Empty, error) {
-	return &Empty{}, s.Impl.Pause()
-}
-
-func (c *TaskGRPCClient) Resume() error {
-	_, err := c.client.Resume(context.Background(), &Empty{})
-	return err
-}
-
-func (s *TaskGRPCServer) Resume(ctx context.Context, req *Empty) (*Empty, error) {
-	return &Empty{}, s.Impl.Resume()
+func (s *TaskGRPCServer) Run(ctx context.Context, req *Empty) (*Empty, error) {
+	return &Empty{}, s.Impl.Run()
 }

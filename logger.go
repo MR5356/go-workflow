@@ -11,8 +11,18 @@ var Logger = hclog.New(&hclog.LoggerOptions{
 	JSONFormat: true,
 })
 
+func UseLogger(name string) hclog.Logger {
+	return hclog.New(&hclog.LoggerOptions{
+		Name:       name,
+		Level:      hclog.Trace,
+		Output:     os.Stderr,
+		JSONFormat: true,
+	})
+}
+
 var LoggerServer = hclog.New(&hclog.LoggerOptions{
 	//Name:   "test",
-	Output: os.Stdout,
-	Level:  hclog.Info,
+	Output:     os.Stdout,
+	JSONFormat: true,
+	Level:      hclog.Info,
 })

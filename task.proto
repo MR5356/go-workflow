@@ -4,17 +4,13 @@ option go_package = "./workflow";
 
 service Task {
   rpc SetParams(TaskParams) returns (Empty);
-  rpc DryRun(Empty) returns (Empty);
-  rpc GetWorkflow(Empty) returns (Workflow);
-  rpc Start(Empty) returns (Empty);
-  rpc Stop(Empty) returns (Empty);
-  rpc Pause(Empty) returns (Empty);
-  rpc Resume(Empty) returns (Empty);
+  rpc GetWorkflow(Empty) returns (WorkflowDAG);
+  rpc Run(Empty) returns (Empty);
 }
 
 message Empty {}
 
-message Workflow {
+message WorkflowDAG {
   // @gotags: json:"nodes"
   repeated Node nodes = 1;
   // @gotags: json:"edges"
@@ -36,9 +32,9 @@ message Node {
 
 message Edge {
   // @gotags: json:"source"
-  Node source = 1;
+  string source = 1;
   // @gotags: json:"target"
-  Node target = 2;
+  string target = 2;
   // @gotags: json:"status"
   string status = 3;
 }

@@ -16,18 +16,16 @@ type Task struct {
 }
 
 func (t *Task) Close() {
-	t.client.Kill()
+	if t != nil && t.client != nil {
+		t.client.Kill()
+	}
 }
 
 type ITask interface {
-	DryRun() error
-	GetWorkflow() *Workflow
+	GetWorkflow() *WorkflowDAG
 	SetParams(params *TaskParams) error
 
-	Start() error
-	Stop() error
-	Pause() error
-	Resume() error
+	Run() error
 }
 
 func (ps *TaskParams) Get(key string) string {
@@ -41,11 +39,7 @@ func (ps *TaskParams) Get(key string) string {
 
 type UnimplementedITask struct{}
 
-func (u *UnimplementedITask) DryRun() error {
-	return nil
-}
-
-func (u *UnimplementedITask) GetWorkflow() *Workflow {
+func (u *UnimplementedITask) GetWorkflow() *WorkflowDAG {
 	return nil
 }
 
@@ -53,18 +47,6 @@ func (u *UnimplementedITask) SetParams(params *TaskParams) error {
 	return nil
 }
 
-func (u *UnimplementedITask) Start() error {
-	return ErrNotImplemented
-}
-
-func (u *UnimplementedITask) Stop() error {
-	return ErrNotImplemented
-}
-
-func (u *UnimplementedITask) Pause() error {
-	return ErrNotImplemented
-}
-
-func (u *UnimplementedITask) Resume() error {
+func (u *UnimplementedITask) Run() error {
 	return ErrNotImplemented
 }

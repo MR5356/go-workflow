@@ -1,97 +1,33 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/MR5356/go-workflow"
-	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/go-plugin"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"net/http"
-	"os"
-	"os/exec"
 )
 
-var we *WorkflowExecutor
+var w *workflow.Workflow
+var taskQueue = make(chan *workflow.Node, 10)
+var ctx, cancel = context.WithCancel(context.Background())
 
-type WorkflowExecutor struct {
-	*workflow.Workflow
-	taskQueue chan *workflow.Node
-}
-
-func NewWorkflowExecutor(wf *workflow.Workflow) *WorkflowExecutor {
-	return &WorkflowExecutor{
-		Workflow:  wf,
-		taskQueue: make(chan *workflow.Node, 10),
-	}
-}
-
-func (we *WorkflowExecutor) DryRun() {
-	for _, task := range we.Nodes {
-		tk, err := task.Dispense()
-		defer tk.Close()
+func Runner() {
+	for node := range taskQueue {
+		logrus.Infof("run node: %+v", node)
+		err := w.RunNode(node)
 		if err != nil {
-			logrus.Errorf("dispense error: %+v", err)
-			continue
+			logrus.Errorf("run node error: %+v", err)
 		}
-		err = tk.SetParams(&workflow.TaskParams{Params: task.Params})
-		if err != nil {
-			logrus.Errorf("set params error: %+v", err)
-			continue
-		}
-		subWf := tk.GetWorkflow()
-		if !subWf.IsNil() {
-			we.ReplaceNodeToSubWorkflow(task, subWf)
-		}
-	}
-	logrus.Infof("workflow: %+v", we.Nodes)
-}
-
-func (we *WorkflowExecutor) Runner() {
-	for task := range we.taskQueue {
-		task.Status = workflow.NodeStatusRunning
-		tk, err := task.Dispense()
-		defer tk.Close()
-		if err != nil {
-			logrus.Errorf("dispense error: %+v", err)
-			task.Status = workflow.NodeStatusFailure
-			continue
-		}
-		err = tk.SetParams(&workflow.TaskParams{Params: task.Params})
-		if err != nil {
-			logrus.Errorf("set params error: %+v", err)
-			task.Status = workflow.NodeStatusFailure
-			continue
-		}
-		err = tk.Start()
-		if err != nil {
-			logrus.Errorf("start error: %+v", err)
-			task.Status = workflow.NodeStatusFailure
-			continue
-		}
-		task.Status = workflow.NodeStatusSuccess
-		ns := we.GetReadyNodes()
-		for _, n := range ns {
-			we.taskQueue <- n
-		}
-	}
-}
-
-func (we *WorkflowExecutor) Executor() {
-	for i := 0; i < 2; i++ {
-		go we.Runner()
-	}
-	we.DryRun()
-	ns := we.GetReadyNodes()
-	for _, n := range ns {
-		n.Status = workflow.NodeStatusReady
-		we.taskQueue <- n
+		logrus.Infof("run node done: %+v", node)
 	}
 }
 
 func getWF() *workflow.Workflow {
 	n1 := &workflow.Node{
-		Id:    "node1",
+		Id:    uuid.NewString(),
 		Label: "克隆代码",
 		Uses:  "./_output/plugin/sleep/sleep",
 		Params: []*workflow.TaskParam{
@@ -102,81 +38,81 @@ func getWF() *workflow.Workflow {
 		},
 	}
 	n2 := &workflow.Node{
-		Id:    "node2",
+		Id:    uuid.NewString(),
 		Label: "buildx环境准备",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n3 := &workflow.Node{
-		Id:    "node3",
+		Id:    uuid.NewString(),
 		Uses:  "./_output/plugin/sleep/sleep",
 		Label: "镜像仓库认证",
 	}
 	n41 := &workflow.Node{
-		Id:    "node41",
+		Id:    uuid.NewString(),
 		Label: "编译1",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n42 := &workflow.Node{
-		Id:    "node42",
+		Id:    uuid.NewString(),
 		Label: "编译2",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n43 := &workflow.Node{
-		Id:    "node43",
+		Id:    uuid.NewString(),
 		Label: "编译3",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n44 := &workflow.Node{
-		Id:    "node44",
+		Id:    uuid.NewString(),
 		Label: "编译4",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n51 := &workflow.Node{
-		Id:    "node51",
+		Id:    uuid.NewString(),
 		Label: "镜像扫描1",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n52 := &workflow.Node{
-		Id:    "node52",
+		Id:    uuid.NewString(),
 		Label: "镜像扫描2",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n53 := &workflow.Node{
-		Id:    "node53",
+		Id:    uuid.NewString(),
 		Label: "镜像扫描3",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n54 := &workflow.Node{
-		Id:    "node54",
+		Id:    uuid.NewString(),
 		Label: "镜像扫描4",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n6 := &workflow.Node{
-		Id:    "node6",
+		Id:    uuid.NewString(),
 		Label: "部署PreProd",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n71 := &workflow.Node{
-		Id:    "node71",
+		Id:    uuid.NewString(),
 		Label: "冒烟测试",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n72 := &workflow.Node{
-		Id:    "node72",
+		Id:    uuid.NewString(),
 		Label: "API测试",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n73 := &workflow.Node{
-		Id:    "node73",
+		Id:    uuid.NewString(),
 		Label: "性能测试",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n8 := &workflow.Node{
-		Id:    "node8",
+		Id:    uuid.NewString(),
 		Label: "部署Prod",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
-	wf := &workflow.Workflow{}
+	wf := workflow.NewWorkflow(ctx, taskQueue)
 	wf.AddNode(n1, n2, n3, n41, n42, n43, n44, n51, n52, n53, n54, n6, n71, n72, n73, n8)
 	wf.AddEdge(n1, n2)
 	wf.AddEdge(n2, n3)
@@ -203,7 +139,7 @@ func getWF() *workflow.Workflow {
 
 func getExpandWF() *workflow.Workflow {
 	n1 := &workflow.Node{
-		Id:    "node1",
+		Id:    uuid.NewString(),
 		Label: "克隆代码",
 		Uses:  "./_output/plugin/sleep/sleep",
 		Params: []*workflow.TaskParam{
@@ -214,81 +150,81 @@ func getExpandWF() *workflow.Workflow {
 		},
 	}
 	n2 := &workflow.Node{
-		Id:    "node2",
+		Id:    uuid.NewString(),
 		Label: "buildx环境准备",
 		Uses:  "./_output/plugin/expand/expand",
 	}
 	n3 := &workflow.Node{
-		Id:    "node3",
+		Id:    uuid.NewString(),
 		Label: "镜像仓库认证",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n41 := &workflow.Node{
-		Id:    "node41",
+		Id:    uuid.NewString(),
 		Label: "编译1",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n42 := &workflow.Node{
-		Id:    "node42",
+		Id:    uuid.NewString(),
 		Label: "编译2",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n43 := &workflow.Node{
-		Id:    "node43",
+		Id:    uuid.NewString(),
 		Label: "编译3",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n44 := &workflow.Node{
-		Id:    "node44",
+		Id:    uuid.NewString(),
 		Label: "编译4",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n51 := &workflow.Node{
-		Id:    "node51",
+		Id:    uuid.NewString(),
 		Label: "镜像扫描1",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n52 := &workflow.Node{
-		Id:    "node52",
+		Id:    uuid.NewString(),
 		Label: "镜像扫描2",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n53 := &workflow.Node{
-		Id:    "node53",
+		Id:    uuid.NewString(),
 		Label: "镜像扫描3",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n54 := &workflow.Node{
-		Id:    "node54",
+		Id:    uuid.NewString(),
 		Label: "镜像扫描4",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n6 := &workflow.Node{
-		Id:    "node6",
+		Id:    uuid.NewString(),
 		Label: "部署PreProd",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n71 := &workflow.Node{
-		Id:    "node71",
+		Id:    uuid.NewString(),
 		Label: "冒烟测试",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n72 := &workflow.Node{
-		Id:    "node72",
+		Id:    uuid.NewString(),
 		Label: "API测试",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n73 := &workflow.Node{
-		Id:    "node73",
+		Id:    uuid.NewString(),
 		Label: "性能测试",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
 	n8 := &workflow.Node{
-		Id:    "node8",
+		Id:    uuid.NewString(),
 		Label: "部署Prod",
 		Uses:  "./_output/plugin/sleep/sleep",
 	}
-	wf := &workflow.Workflow{}
+	wf := workflow.NewWorkflow(ctx, taskQueue)
 	wf.AddNode(n1, n2, n3, n41, n42, n43, n44, n51, n52, n53, n54, n6, n71, n72, n73, n8)
 	wf.AddEdge(n1, n2)
 	wf.AddEdge(n2, n3)
@@ -314,57 +250,38 @@ func getExpandWF() *workflow.Workflow {
 }
 
 func main() {
-	we = NewWorkflowExecutor(getWF())
+	for i := 0; i < 3; i++ {
+		go Runner()
+	}
+	w = getWF()
 
 	http.HandleFunc("/api/v1", func(writer http.ResponseWriter, request *http.Request) {
-		ww := we.GetWorkflow()
+		ww := w.GetWorkflow()
 		s, _ := json.Marshal(ww)
 
 		fmt.Fprintf(writer, string(s))
 	})
 
 	http.HandleFunc("/api/v1/start", func(writer http.ResponseWriter, request *http.Request) {
-		we.Executor()
+		err := w.Run()
+		if err != nil {
+			fmt.Fprintf(writer, string("failed"))
+		}
+
+		fmt.Fprintf(writer, string("success"))
+	})
+
+	http.HandleFunc("/api/v1/cancel", func(writer http.ResponseWriter, request *http.Request) {
+		cancel()
 		fmt.Fprintf(writer, string("success"))
 	})
 
 	http.HandleFunc("/api/v1/reset", func(writer http.ResponseWriter, request *http.Request) {
-		we = NewWorkflowExecutor(getExpandWF())
+		ctx, cancel = context.WithCancel(context.Background())
+		w = getExpandWF()
 	})
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		logrus.Fatalf("listen error: %+v", err)
-	}
-}
-
-func mainPlugin() {
-	logger := hclog.New(&hclog.LoggerOptions{
-		Name:   "test",
-		Output: os.Stdout,
-		Level:  hclog.Info,
-	})
-
-	client := plugin.NewClient(&plugin.ClientConfig{
-		HandshakeConfig:  workflow.Handshake,
-		Plugins:          workflow.GetPluginMap(),
-		Cmd:              exec.Command("sh", "-c", "./_output/plugin/checkout"),
-		Logger:           logger,
-		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
-	})
-	defer client.Kill()
-
-	rpcClient, err := client.Client()
-	if err != nil {
-		logrus.Fatalf("client.Client() failed: %+v", err)
-	}
-
-	task, err := rpcClient.Dispense("task")
-	if err != nil {
-		logrus.Fatalf("rpcClient.Dispense() failed: %+v", err)
-	}
-
-	err = task.(workflow.ITask).Start()
-	if err != nil {
-		logrus.Fatalf("task.Start() failed: %+v", err)
 	}
 }
